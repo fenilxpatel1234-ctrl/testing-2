@@ -68,19 +68,19 @@ export const EmergencyView: React.FC<EmergencyViewProps> = ({ onSelectView, onOp
           </div>
         </div>
 
-        {/* Triage Steps */}
+        {/* Emergency Steps */}
         <div className="space-y-6">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
               <AlertTriangle className="w-5 h-5 text-amber-600" />
             </div>
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight">Triage Guidelines</h2>
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight">Emergency Guidelines</h2>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {emergencies.map((item, idx) => (
-              <div key={idx} className="bg-white rounded-3xl p-8 border border-slate-100 shadow-xl shadow-slate-200/50 flex flex-col relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
-                <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform duration-500">
+              <div key={idx} className="bg-white rounded-3xl p-8 border border-slate-100 shadow-xl shadow-slate-200/50 flex flex-col relative overflow-hidden group transition-all duration-300">
+                <div className="absolute top-0 right-0 p-6 opacity-10 transition-transform duration-500">
                   {item.icon}
                 </div>
                 
@@ -101,8 +101,8 @@ export const EmergencyView: React.FC<EmergencyViewProps> = ({ onSelectView, onOp
                   </ul>
                 </div>
                 
-                <button onClick={() => onOpenBooking(undefined, true)} className="mt-8 w-full py-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 text-sm font-bold transition-colors flex items-center justify-center gap-2 group-hover:bg-slate-900 group-hover:text-white">
-                  Triage Now <ArrowRight className="w-4 h-4" />
+                <button onClick={() => onOpenBooking(undefined, true)} className="mt-8 w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold transition-colors flex items-center justify-center gap-2">
+                  Book Urgent <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
             ))}
