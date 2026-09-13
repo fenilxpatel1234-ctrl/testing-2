@@ -13,3 +13,12 @@ input[type="button"],
 summary {
   cursor: auto;
 }
+
+/* Hide scrollbars site-wide */
+::-webkit-scrollbar {
+    display: none;
+}
+* {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
