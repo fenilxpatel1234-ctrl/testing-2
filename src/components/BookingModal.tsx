@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, CheckCircle2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { Doctor } from '../types';
+import { Doctor, ServiceListEntry } from '../types';
 import { isDateInPast, todaySlug } from '../lib/dateUtil';
 
 export const COUNTRIES = [
@@ -270,8 +270,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, pre
   const [submitted, setSubmitted] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [services, setServices] = useState<ServiceListEntry[]>([]);
   const [doctorPreference, setDoctorPreference] = useState('Any Available');
+  const [selectedService, setSelectedService] = useState(preselectedServiceId || '');
   const phoneInputRef = useRef<HTMLInputElement>(null);
+  const countryInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     detectCountryCode().then(code => setCountryCode(code));
@@ -282,7 +285,18 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, pre
       .then(r => r.json())
       .then(data => { if (Array.isArray(data)) setDoctors(data); })
       .catch(() => {});
-  }, []);
+    fetch('/api/services')
+      .then(r => r.json())
+      .then(data => { 
+        if (Array.isArray(data)) {
+          setServices(data);
+          if (preselectedServiceId && data.find(s => s.id === preselectedServiceId)) {
+            setSelectedService(data.find(s => s.id === preselectedServiceId)!.label);
+          }
+        }
+      })
+      .catch(() => {});
+  }, [preselectedServiceId]);
 
   if (!isOpen) return null;
 
@@ -321,36 +335,31 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, pre
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg('');
-    if (!formData.firstName || !formData.lastName || !formData.email || !formData.phone) {
-      setErrorMsg('Please fill in all required fields.');
-      return;
-    }
-    if (isDateInPast(formData.preferredDate)) {
-      setErrorMsg('Apologies, but that date has already passed. Please choose a future date.');
-      return;
-    }
     setIsSubmitting(true);
+    setErrorMsg('');
     try {
       const res = await fetch('/api/appointments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...formData,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
           phone: `${selectedCountry.dial} ${formData.phone}`,
-          serviceName: 'General Appointment',
-          serviceId: 'general-checkup',
+          preferredDate: formData.preferredDate,
+          preferredTimeSlot: formData.preferredTimeSlot,
+          serviceId: selectedService,
+          serviceName: selectedService || (isEmergency ? 'Emergency Dental Care' : 'General Consultation'),
           doctorPreference,
-          insuranceProvider: 'Not Specified',
-          isNewPatient: true,
-          consent: true,
-          isEmergency: !!isEmergency
+          notes: formData.notes,
+          isEmergency
         })
       });
+      
       const data = await res.json();
       if (data.success) {
         setSubmitted(true);
-        confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
       } else {
         setErrorMsg(data.error || 'Something went wrong.');
       }
@@ -362,124 +371,182 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, pre
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md">
-      <div className="relative w-full max-w-lg bg-white/95 backdrop-blur-xl rounded-3xl shadow-[0_0_60px_-15px_rgba(0,0,0,0.3)] border border-white/50 overflow-hidden">
-        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600"></div>
-        <button onClick={onClose} className="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-100/80 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-all z-10">
-          <X className="w-4 h-4" />
-        </button>
-
-        <div className="p-8">
-          <h2 className="text-2xl font-black text-slate-900 mb-1.5">Book an Appointment</h2>
-          <p className="text-xs text-slate-500 mb-6 font-medium">Fill in your details and we'll confirm your visit shortly.</p>
-
-          {submitted ? (
-            <div className="text-center py-8 space-y-4">
-              <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center">
-                <CheckCircle2 className="w-8 h-8" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-900">Request Sent!</h3>
-              <p className="text-xs text-slate-500">We'll contact you within 2 business hours.</p>
-              <button onClick={() => { setSubmitted(false); onClose(); }} className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-colors">Done</button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-md overflow-hidden">
+      <div className="relative w-full max-w-5xl bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[95vh] border border-white/40">
+        
+        {/* Left Pane - Branding / Image */}
+        <div className="hidden md:flex md:w-5/12 relative bg-slate-900 flex-col justify-end p-10 overflow-hidden">
+          <div className="absolute inset-0">
+            <img src="https://static.wixstatic.com/media/02c124_bfd56d5c986d465ea09e0bc641b8ce19~mv2.jpg" alt="Clinic Office" className="w-full h-full object-cover opacity-60" />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
+            <div className="absolute inset-0 bg-blue-900/20 mix-blend-multiply" />
+          </div>
+          <div className="relative z-10 space-y-6">
+            <div className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
+              <CheckCircle2 className="w-8 h-8 text-white" />
             </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {errorMsg && (
-                <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-xl">{errorMsg}</div>
-              )}
+            <div>
+              <h2 className="text-3xl font-bold text-white mb-2 leading-tight">Expert Dental Care,<br/>Tailored for You.</h2>
+              <p className="text-sm text-blue-100/90 leading-relaxed max-w-xs">Schedule your visit with our specialists today and experience dentistry redefined in St. Thomas.</p>
+            </div>
+          </div>
+        </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">First Name *</label>
-                  <input type="text" required value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 outline-none focus:ring-2 focus:ring-blue-500" placeholder="First" />
+        {/* Right Pane - Form */}
+        <div className="w-full md:w-7/12 flex flex-col h-full max-h-[95vh]">
+          <div className="flex items-center justify-between p-6 sm:p-8 border-b border-slate-100 bg-white z-10 shrink-0">
+            <div>
+              <h2 className="text-2xl font-black text-slate-900 tracking-tight">Book Appointment</h2>
+              <p className="text-xs text-slate-500 font-medium mt-1">Fill in your details below to request a time.</p>
+            </div>
+            <button onClick={onClose} className="w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-all">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-6 sm:p-8 custom-scrollbar">
+            {submitted ? (
+              <div className="flex flex-col items-center justify-center h-full text-center space-y-5 animate-in fade-in zoom-in duration-500 py-10">
+                <div className="w-20 h-20 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                  <CheckCircle2 className="w-10 h-10" />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Last Name *</label>
-                  <input type="text" required value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 outline-none focus:ring-2 focus:ring-blue-500" placeholder="Last" />
+                  <h3 className="text-2xl font-bold text-slate-900 mb-2">Request Confirmed!</h3>
+                  <p className="text-sm text-slate-500 max-w-xs mx-auto">We've received your request and will contact you within 2 business hours to confirm your time.</p>
                 </div>
+                <button onClick={() => { setSubmitted(false); onClose(); }} className="px-8 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm transition-colors mt-4">Done</button>
               </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Phone Number *</label>
-                <div className="flex gap-2">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={countrySearch}
-                      placeholder={selectedCountry.dial}
-                      onChange={(e) => { setCountrySearch(e.target.value); setCountryOpen(true); setCountryIndex(0); }}
-                      onFocus={() => setCountryOpen(true)}
-                      onKeyDown={handleCountryKeyDown}
-                      className="w-24 px-2 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                      title="Search country code"
-                    />
-                    {countryOpen && (
-                      <div className="absolute top-full left-0 mt-1 w-64 max-h-48 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-2xl z-20">
-                        {filteredCountries.length === 0 && (
-                          <div className="px-3 py-2 text-xs text-slate-400">No countries found. Try another spelling.</div>
-                        )}
-                        {filteredCountries.map((c, i) => (
-                          <button key={c.code} type="button" onClick={() => selectCountry(c.code)} onMouseEnter={() => setCountryIndex(i)} className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2 transition-colors ${i === countryIndex ? 'bg-blue-50 text-blue-600 font-semibold' : 'text-slate-700'}`}>
-                            <span className="w-6 shrink-0">{c.dial}</span>
-                            <span className="truncate">{c.name}</span>
-                            <span className="ml-auto text-[10px] text-slate-400 shrink-0">{c.code}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-5 pb-6">
+                {errorMsg && (
+                  <div className="p-4 bg-red-50 border border-red-200 text-red-600 text-sm rounded-2xl flex items-start gap-3">
+                    <div className="mt-0.5"><X className="w-4 h-4" /></div>
+                    <div>{errorMsg}</div>
                   </div>
-                  <input ref={phoneInputRef} type="tel" required value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="flex-1 px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 outline-none focus:ring-2 focus:ring-blue-500" placeholder="Phone number" />
-                </div>
-                <p className="text-[10px] text-slate-400 mt-1">Click the code box and type to search your country (e.g. "Canada"), use ↑ ↓ + Enter to pick.</p>
-              </div>
+                )}
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Email *</label>
-                <input type="email" required value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 outline-none focus:ring-2 focus:ring-blue-500" placeholder="your@email.com" />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Date *</label>
-                  <input type="date" required min={todaySlug()} value={formData.preferredDate} onChange={(e) => setFormData({ ...formData, preferredDate: e.target.value })} className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 outline-none focus:ring-2 focus:ring-blue-500" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">First Name *</label>
+                    <input type="text" required value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:bg-white rounded-xl text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 transition-all" placeholder="John" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">Last Name *</label>
+                    <input type="text" required value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:bg-white rounded-xl text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 transition-all" placeholder="Doe" />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Time *</label>
-                  <select required value={formData.preferredTimeSlot} onChange={(e) => setFormData({ ...formData, preferredTimeSlot: e.target.value })} className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="09:00 AM">9:00 AM</option>
-                    <option value="10:00 AM">10:00 AM</option>
-                    <option value="11:00 AM">11:00 AM</option>
-                    <option value="12:00 PM">12:00 PM</option>
-                    <option value="01:00 PM">1:00 PM</option>
-                    <option value="02:00 PM">2:00 PM</option>
-                    <option value="03:00 PM">3:00 PM</option>
-                    <option value="04:00 PM">4:00 PM</option>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">Phone Number *</label>
+                  <div className="flex gap-2">
+                    <div className="relative">
+                      <button 
+                        type="button" 
+                        onClick={() => { setCountryOpen(!countryOpen); setTimeout(() => countryInputRef.current?.focus(), 100); }}
+                        className="h-full px-3 py-3 bg-slate-50 border border-slate-200 hover:bg-slate-100 rounded-xl text-sm text-slate-900 outline-none flex items-center gap-2 font-medium"
+                      >
+                        <span className="w-5 text-center">{selectedCountry.code}</span>
+                        <span className="text-slate-500 text-xs">{selectedCountry.dial}</span>
+                      </button>
+                      
+                      {countryOpen && (
+                        <div className="absolute top-full left-0 mt-2 w-72 max-h-64 overflow-hidden bg-white border border-slate-200 rounded-2xl shadow-xl z-20 flex flex-col">
+                          <div className="p-2 border-b border-slate-100 bg-slate-50/50">
+                            <input
+                              ref={countryInputRef}
+                              type="text"
+                              value={countrySearch}
+                              placeholder="Search country..."
+                              onChange={(e) => { setCountrySearch(e.target.value); setCountryIndex(0); }}
+                              onKeyDown={handleCountryKeyDown}
+                              className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-500"
+                            />
+                          </div>
+                          <div className="overflow-y-auto flex-1 p-1">
+                            {filteredCountries.length === 0 && (
+                              <div className="px-3 py-4 text-xs text-slate-400 text-center">No countries found.</div>
+                            )}
+                            {filteredCountries.map((c, i) => (
+                              <button key={c.code} type="button" onClick={() => selectCountry(c.code)} onMouseEnter={() => setCountryIndex(i)} className={`w-full text-left px-3 py-2.5 rounded-lg text-xs flex items-center gap-3 transition-colors ${i === countryIndex ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-slate-700 hover:bg-slate-50'}`}>
+                                <span className="font-mono text-slate-400 w-8">{c.dial}</span>
+                                <span className="truncate flex-1">{c.name}</span>
+                                <span className="text-[10px] text-slate-400 font-bold bg-slate-100 px-1.5 py-0.5 rounded">{c.code}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <input ref={phoneInputRef} type="tel" required value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 focus:bg-white rounded-xl text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium tracking-wide" placeholder="(555) 123-4567" />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">Email Address *</label>
+                  <input type="email" required value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:bg-white rounded-xl text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 transition-all" placeholder="john@example.com" />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">Service Required *</label>
+                  <select required value={selectedService} onChange={(e) => setSelectedService(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:bg-white rounded-xl text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer">
+                    <option value="" disabled>Select a service...</option>
+                    {services.map(srv => (
+                      <option key={srv.id} value={srv.label}>{srv.label}</option>
+                    ))}
+                    <option value="General Consultation">General Consultation / Other</option>
                   </select>
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Preferred Doctor</label>
-                <select value={doctorPreference} onChange={(e) => setDoctorPreference(e.target.value)} className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 outline-none focus:ring-2 focus:ring-blue-500">
-                  <option value="Any Available">Any Available Doctor</option>
-                  {doctors.map(doc => (
-                    <option key={doc.id} value={`${doc.name}${doc.credentials ? `, ${doc.credentials}` : ''}`}>
-                      {doc.name}{doc.credentials ? `, ${doc.credentials}` : ''} — {doc.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">Preferred Date *</label>
+                    <input type="date" required min={todaySlug()} value={formData.preferredDate} onChange={(e) => setFormData({ ...formData, preferredDate: e.target.value })} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:bg-white rounded-xl text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 transition-all" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">Preferred Time *</label>
+                    <select required value={formData.preferredTimeSlot} onChange={(e) => setFormData({ ...formData, preferredTimeSlot: e.target.value })} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:bg-white rounded-xl text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer">
+                      <option value="09:00 AM">9:00 AM (Morning)</option>
+                      <option value="10:00 AM">10:00 AM</option>
+                      <option value="11:00 AM">11:00 AM</option>
+                      <option value="12:00 PM">12:00 PM (Noon)</option>
+                      <option value="01:00 PM">1:00 PM</option>
+                      <option value="02:00 PM">2:00 PM</option>
+                      <option value="03:00 PM">3:00 PM</option>
+                      <option value="04:00 PM">4:00 PM (Late Afternoon)</option>
+                    </select>
+                  </div>
+                </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Additional Notes</label>
-                <textarea rows={3} value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 resize-none" placeholder="Any specific concerns or requests..." />
-              </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">Preferred Doctor</label>
+                  <select value={doctorPreference} onChange={(e) => setDoctorPreference(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:bg-white rounded-xl text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer">
+                    <option value="Any Available">Any Available Doctor</option>
+                    {doctors.map(doc => (
+                      <option key={doc.id} value={`${doc.name}${doc.credentials ? `, ${doc.credentials}` : ''}`}>
+                        {doc.name}{doc.credentials ? `, ${doc.credentials}` : ''} — {doc.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-              <button type="submit" disabled={isSubmitting} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white font-bold text-sm shadow-lg shadow-blue-500/30 transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-2">
-                {isSubmitting ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> Submitting...</> : <>Submit Booking Request</>}
-              </button>
-            </form>
-          )}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">Additional Notes</label>
+                  <textarea rows={3} value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:bg-white rounded-xl text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 transition-all resize-none" placeholder="Any specific concerns, symptoms, or requests..." />
+                </div>
+
+                <div className="pt-4">
+                  <button type="submit" disabled={isSubmitting} className="w-full py-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm shadow-xl shadow-slate-900/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2 group">
+                    {isSubmitting ? (
+                      <><span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span> Processing...</>
+                    ) : (
+                      <>Submit Booking Request <span className="group-hover:translate-x-1 transition-transform">→</span></>
+                    )}
+                  </button>
+                  <p className="text-center text-[10px] text-slate-400 mt-4 font-medium uppercase tracking-wider">Your information is secure and encrypted</p>
+                </div>
+              </form>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -6,7 +6,7 @@ import dotenv from 'dotenv';
 import nodemailer from 'nodemailer';
 import rateLimit from 'express-rate-limit';
 import { createServer as createViteServer } from 'vite';
-import { AppointmentRequest, PatientMessage, AdminUser, ResetToken, Doctor, SiteReview } from './src/types';
+import { AppointmentRequest, PatientMessage, AdminUser, ResetToken, Doctor, SiteReview, ServiceListEntry } from './src/types';
 import { initFirebase, isFirebaseReady, fbGet, fbSet } from './src/lib/firebase';
 import { CLINIC_SETTINGS, SERVICES_LIST, SERVICE_DETAILS } from './src/data/mockData';
 
@@ -77,6 +77,7 @@ const MESSAGES_FILE = path.join(DATA_DIR, 'messages.json');
 const ADMINS_FILE = path.join(DATA_DIR, 'admins.json');
 const DOCTORS_FILE = path.join(DATA_DIR, 'doctors.json');
 const REVIEWS_FILE = path.join(DATA_DIR, 'reviews.json');
+const SERVICES_FILE = path.join(DATA_DIR, 'services.json');
 
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
@@ -105,6 +106,7 @@ let appointmentDatabase: AppointmentRequest[] = loadJSON(APPOINTMENTS_FILE, [], 
 let messageDatabase: PatientMessage[] = loadJSON(MESSAGES_FILE, [], path.join(SEEDS_DIR, 'messages.json'));
 let doctorDatabase: Doctor[] = loadJSON(DOCTORS_FILE, [], path.join(SEEDS_DIR, 'doctors.json'));
 let reviewDatabase: SiteReview[] = loadJSON(REVIEWS_FILE, [], path.join(SEEDS_DIR, 'reviews.json'));
+let servicesDatabase: ServiceListEntry[] = loadJSON(SERVICES_FILE, SERVICES_LIST);
 
 if (doctorDatabase.length === 0) {
   doctorDatabase = [
@@ -141,6 +143,7 @@ function persistMessages() { saveJSON(MESSAGES_FILE, messageDatabase); fbSet('me
 function persistAdmins() { saveJSON(ADMINS_FILE, adminDatabase); fbSet('admins', adminDatabase); }
 function persistDoctors() { saveJSON(DOCTORS_FILE, doctorDatabase); fbSet('doctors', doctorDatabase); }
 function persistReviews() { saveJSON(REVIEWS_FILE, reviewDatabase); fbSet('reviews', reviewDatabase); }
+function persistServices() { saveJSON(SERVICES_FILE, servicesDatabase); fbSet('services', servicesDatabase); }
 
 // --- Admin auth: password hashing, httpOnly sessions, brute-force protection ---
 function hashPassword(password: string): string {
@@ -959,6 +962,44 @@ app.delete('/api/doctors/:id', requireAdmin, (req: Request, res: Response) => {
   res.json({ success: true, message: 'Doctor removed.' });
 });
 
+// --- Services CRUD ---
+app.get('/api/services', (req: Request, res: Response) => {
+  res.json(servicesDatabase);
+});
+
+app.post('/api/services', requireAdmin, (req: Request, res: Response) => {
+  const { label, description, icon } = req.body;
+  if (!label) return res.status(400).json({ error: 'Service label is required.' });
+  const newService: ServiceListEntry = {
+    id: `srv-${Date.now().toString(36)}`,
+    label,
+    description: description || '',
+    icon: icon || 'Circle'
+  };
+  servicesDatabase.push(newService);
+  persistServices();
+  res.json({ success: true, service: newService });
+});
+
+app.patch('/api/services/:id', requireAdmin, (req: Request, res: Response) => {
+  const { id } = req.params;
+  const idx = servicesDatabase.findIndex(s => s.id === id);
+  if (idx === -1) return res.status(404).json({ error: 'Service not found.' });
+  const { label, description, icon } = req.body;
+  if (label) servicesDatabase[idx].label = label;
+  if (description !== undefined) servicesDatabase[idx].description = description;
+  if (icon !== undefined) servicesDatabase[idx].icon = icon;
+  persistServices();
+  res.json({ success: true, service: servicesDatabase[idx] });
+});
+
+app.delete('/api/services/:id', requireAdmin, (req: Request, res: Response) => {
+  const { id } = req.params;
+  servicesDatabase = servicesDatabase.filter(s => s.id !== id);
+  persistServices();
+  res.json({ success: true, message: 'Service removed.' });
+});
+
 // Admin Auth Endpoint (accepts email or username)
 app.post('/api/admin/login', (req: Request, res: Response) => {
   const ip = getClientIp(req);
@@ -1377,7 +1418,16 @@ async function hydrateFromFirebase(): Promise<void> {
     await fbSet('reviews', reviewDatabase);
   }
 
-  console.log(`[storage] Firebase source of truth: ${doctorDatabase.length} doctors, ${appointmentDatabase.length} appointments, ${messageDatabase.length} messages, ${adminDatabase.length} admins, ${reviewDatabase.length} reviews`);
+  // Services
+  const fbServices = await fbGet<ServiceListEntry[]>('services');
+  if (Array.isArray(fbServices)) {
+    servicesDatabase = fbServices;
+    saveJSON(SERVICES_FILE, servicesDatabase);
+  } else {
+    await fbSet('services', servicesDatabase);
+  }
+
+  console.log(`[storage] Firebase source of truth: ${doctorDatabase.length} doctors, ${servicesDatabase.length} services, ${appointmentDatabase.length} appointments, ${messageDatabase.length} messages, ${adminDatabase.length} admins, ${reviewDatabase.length} reviews`);
 }
 
 async function startServer() {

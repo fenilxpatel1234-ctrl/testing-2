@@ -24,7 +24,9 @@ type BookingStage =
   | 'date'
   | 'time'
   | 'notes'
-  | 'confirm';
+  | 'confirm'
+  | 'editField'
+  | 'editValue';
 
 interface BookingData {
   firstName: string;
@@ -54,6 +56,7 @@ export const DentalConciergeAI: React.FC<DentalConciergeAIProps> = ({
   const [bookingData, setBookingData] = useState<BookingData>({
     firstName: '', lastName: '', email: '', phone: '', date: '', time: '', notes: ''
   });
+  const [editTarget, setEditTarget] = useState<string>('');
   const [countryCode, setCountryCode] = useState('US');
   const [countrySearch, setCountrySearch] = useState('');
   const [countryListOpen, setCountryListOpen] = useState(false);
@@ -217,21 +220,102 @@ Is there anything else I can help you with?`);
 • Email: ${bookingData.email}
 • Phone: ${bookingData.phone}
 • Date: ${bookingData.date}
-• Time: ${value === 'none' ? bookingData.time : bookingData.time}
-${value !== 'none' ? `• Notes: ${value}` : ''}
+• Time: ${bookingData.time}
+${(value !== 'none' && value !== '') ? `• Notes: ${value}` : ''}
 
-Does everything look correct? Reply "yes" to submit or "no" to start over.`);
+Does everything look correct? Reply "yes" to submit, "edit" to make changes, or "no" to start over.`);
         return true;
 
       case 'confirm':
         if (value.toLowerCase() === 'yes' || value.toLowerCase() === 'yep' || value.toLowerCase() === 'correct') {
           submitBooking();
+        } else if (value.toLowerCase() === 'edit' || value.toLowerCase().includes('change')) {
+          setBookingStage('editField');
+          addAiMsg("Which field would you like to edit? (Reply with one of: name, email, phone, date, time, notes)");
         } else {
           setBookingStage('firstName');
           setBookingData({ firstName: '', lastName: '', email: '', phone: '', date: '', time: '', notes: '' });
           addAiMsg("No problem! Let's start over. What's your first name?");
         }
         return true;
+
+      case 'editField': {
+        const field = value.toLowerCase();
+        if (field.includes('name')) {
+          setEditTarget('name');
+          setBookingStage('editValue');
+          addAiMsg(`Current name is ${bookingData.firstName} ${bookingData.lastName}. What should the new name be? (First Last)`);
+        } else if (field.includes('email')) {
+          setEditTarget('email');
+          setBookingStage('editValue');
+          addAiMsg(`Current email is ${bookingData.email}. What should the new email be?`);
+        } else if (field.includes('phone')) {
+          setEditTarget('phone');
+          setBookingStage('editValue');
+          addAiMsg(`Current phone is ${bookingData.phone}. What should the new phone number be?`);
+        } else if (field.includes('date')) {
+          setEditTarget('date');
+          setBookingStage('editValue');
+          addAiMsg(`Current date is ${bookingData.date}. What should the new date be? (e.g. 2026-08-15)`);
+        } else if (field.includes('time')) {
+          setEditTarget('time');
+          setBookingStage('editValue');
+          addAiMsg(`Current time is ${bookingData.time}. What should the new time be?`);
+        } else if (field.includes('note')) {
+          setEditTarget('notes');
+          setBookingStage('editValue');
+          addAiMsg(`Current notes are: ${bookingData.notes}. What should the new notes be?`);
+        } else {
+          addAiMsg("I didn't catch that. Please reply with one of: name, email, phone, date, time, notes");
+        }
+        return true;
+      }
+
+      case 'editValue': {
+        if (editTarget === 'name') {
+          const parts = value.split(' ');
+          const first = parts[0];
+          const last = parts.slice(1).join(' ') || '';
+          setBookingData(prev => ({ ...prev, firstName: first, lastName: last }));
+        } else if (editTarget === 'email') {
+          if (!value.includes('@')) {
+            addAiMsg("That doesn't look like a valid email. Could you please enter a valid email address?");
+            return true;
+          }
+          setBookingData(prev => ({ ...prev, email: value }));
+        } else if (editTarget === 'phone') {
+          setBookingData(prev => ({ ...prev, phone: value }));
+        } else if (editTarget === 'date') {
+          const parsed = parseFlexibleDate(value);
+          if (!parsed) {
+            addAiMsg("I couldn't recognize that date. Please reply like 2026-08-15 or August 15, 2026.");
+            return true;
+          }
+          if (isDateInPast(toSlug(parsed))) {
+            addAiMsg(`That date has already passed. Please pick a date from today onward.`);
+            return true;
+          }
+          setBookingData(prev => ({ ...prev, date: toSlug(parsed) }));
+        } else if (editTarget === 'time') {
+          setBookingData(prev => ({ ...prev, time: value }));
+        } else if (editTarget === 'notes') {
+          setBookingData(prev => ({ ...prev, notes: value === 'none' ? '' : value }));
+        }
+
+        // Re-confirm after edit
+        setBookingStage('confirm');
+        addAiMsg(`Got it! I've updated the ${editTarget}. Let me re-confirm your appointment details:
+
+• Name: ${editTarget === 'name' ? value : `${bookingData.firstName} ${bookingData.lastName}`}
+• Email: ${editTarget === 'email' ? value : bookingData.email}
+• Phone: ${editTarget === 'phone' ? value : bookingData.phone}
+• Date: ${editTarget === 'date' ? toSlug(parseFlexibleDate(value)!) : bookingData.date}
+• Time: ${editTarget === 'time' ? value : bookingData.time}
+• Notes: ${editTarget === 'notes' ? value : bookingData.notes}
+
+Does everything look correct? Reply "yes" to submit, "edit" to make changes, or "no" to start over.`);
+        return true;
+      }
     }
     return false;
   };

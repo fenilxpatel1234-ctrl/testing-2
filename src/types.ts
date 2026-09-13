@@ -12,6 +12,13 @@ export type PageView =
   | 'admin'
   | 'reset-password';
 
+export interface ServiceListEntry {
+  id: string;
+  label: string;
+  description: string;
+  icon: string;
+}
+
 export interface ServiceDetail {
   id: string;
   title: string;

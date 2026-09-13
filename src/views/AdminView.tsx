@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PageView, AppointmentRequest, PatientMessage, AdminUser, Doctor, SiteReview } from '../types';
+import { PageView, AppointmentRequest, PatientMessage, AdminUser, Doctor, SiteReview, ServiceListEntry } from '../types';
 import { CLINIC_SETTINGS } from '../data/mockData';
 import { 
   Lock, 
@@ -59,7 +59,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ onSelectView }) => {
   const [resetSubmitting, setResetSubmitting] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState<{ id: string; name: string; username?: string; gender?: string } | null>(null);
 
-  const [activeTab, setActiveTab] = useState<'appointments' | 'emergency-apt' | 'messages' | 'analytics' | 'emails' | 'settings' | 'admins' | 'doctors' | 'reviews'>('appointments');
+  const [activeTab, setActiveTab] = useState<'appointments' | 'emergency-apt' | 'messages' | 'analytics' | 'emails' | 'settings' | 'admins' | 'doctors' | 'reviews' | 'services'>('appointments');
   const [visitorCount, setVisitorCount] = useState(0);
   const [appointments, setAppointments] = useState<AppointmentRequest[]>([]);
   const [messages, setMessages] = useState<PatientMessage[]>([]);
@@ -82,6 +82,12 @@ export const AdminView: React.FC<AdminViewProps> = ({ onSelectView }) => {
   const [editingDoctor, setEditingDoctor] = useState<Doctor | null>(null);
   const [newDoctor, setNewDoctor] = useState({ name: '', title: '', credentials: '', bio: '', image: '' });
   const [doctorMsg, setDoctorMsg] = useState('');
+
+  // Services management
+  const [services, setServices] = useState<ServiceListEntry[]>([]);
+  const [editingService, setEditingService] = useState<ServiceListEntry | null>(null);
+  const [showAddService, setShowAddService] = useState(false);
+  const [newService, setNewService] = useState({ label: '', description: '', icon: 'Circle' });
 
   // Reviews management
   const [reviews, setReviews] = useState<SiteReview[]>([]);
@@ -144,6 +150,14 @@ export const AdminView: React.FC<AdminViewProps> = ({ onSelectView }) => {
     } catch {}
   };
 
+  const fetchServices = async () => {
+    try {
+      const res = await fetch('/api/services');
+      const data = await res.json();
+      if (Array.isArray(data)) setServices(data);
+    } catch {}
+  };
+
   const fetchReviews = async () => {
     try {
       const res = await fetch('/api/reviews');
@@ -170,6 +184,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ onSelectView }) => {
       fetchMessages();
       fetchAdmins();
       fetchDoctors();
+      fetchServices();
       fetchReviews();
     }
   }, [isLoggedIn]);
@@ -665,6 +680,15 @@ export const AdminView: React.FC<AdminViewProps> = ({ onSelectView }) => {
             }`}
           >
             <Stethoscope className="w-4 h-4" /> Doctors <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${activeTab === 'doctors' ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500'}`}>{doctors.length}</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('services')}
+            className={`px-4 sm:px-5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 ${
+              activeTab === 'services' ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <Sparkles className="w-4 h-4" /> Services <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${activeTab === 'services' ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500'}`}>{services.length}</span>
           </button>
 
           <button
@@ -1542,6 +1566,90 @@ export const AdminView: React.FC<AdminViewProps> = ({ onSelectView }) => {
                     if (data.success) { setEditingDoctor(null); fetchDoctors(); setDoctorMsg('Doctor updated successfully!'); }
                   }} className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition-colors"><Save className="w-3.5 h-3.5 inline" /> Save</button>
                   <button onClick={() => setEditingDoctor(null)} className="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors">Cancel</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB: SERVICES MANAGEMENT */}
+      {activeTab === 'services' && (
+        <div className="space-y-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-bold text-slate-900">Services Directory</h3>
+              <p className="text-xs text-slate-500">Manage the services offered by the clinic. These appear on the homepage and in the booking form.</p>
+            </div>
+            <button onClick={() => setShowAddService(true)} className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs flex items-center gap-2 transition-colors">
+              <Plus className="w-4 h-4" /> Add Service
+            </button>
+          </div>
+
+          {showAddService && (
+            <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xl space-y-4">
+              <h4 className="font-bold text-sm text-slate-900">New Service</h4>
+              <div className="space-y-3">
+                <input type="text" placeholder="Service Label (e.g. Teeth Whitening)" value={newService.label} onChange={(e) => setNewService({ ...newService, label: e.target.value })} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500" />
+                <textarea rows={2} placeholder="Brief Description" value={newService.description} onChange={(e) => setNewService({ ...newService, description: e.target.value })} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+                <input type="text" placeholder="Icon name (e.g. Sparkles, Star)" value={newService.icon} onChange={(e) => setNewService({ ...newService, icon: e.target.value })} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button onClick={async () => {
+                  if (!newService.label.trim()) return alert('Label is required.');
+                  const res = await fetch('/api/services', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newService)
+                  });
+                  if (res.ok) { setShowAddService(false); setNewService({ label: '', description: '', icon: 'Circle' }); fetchServices(); }
+                  else alert('Failed to add service.');
+                }} className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs">Save Service</button>
+                <button onClick={() => setShowAddService(false)} className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs">Cancel</button>
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {services.map(srv => (
+              <div key={srv.id} className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-md hover:shadow-xl transition-all group flex flex-col justify-between">
+                <div>
+                  <h4 className="font-bold text-slate-900 text-sm mb-1">{srv.label}</h4>
+                  <p className="text-xs text-slate-500 line-clamp-3">{srv.description}</p>
+                </div>
+                <div className="flex gap-2 mt-4 pt-4 border-t border-slate-100">
+                  <button onClick={() => setEditingService(srv)} className="flex-1 py-2 rounded-xl bg-slate-50 hover:bg-blue-50 hover:text-blue-600 text-slate-600 font-semibold text-xs flex items-center justify-center gap-1 transition-colors">
+                    <Edit3 className="w-3.5 h-3.5" /> Edit
+                  </button>
+                  <button onClick={async () => {
+                    if (!confirm('Delete this service?')) return;
+                    const res = await fetch(`/api/services/${srv.id}`, { method: 'DELETE' });
+                    if (res.ok) fetchServices();
+                  }} className="flex-1 py-2 rounded-xl bg-slate-50 hover:bg-red-50 hover:text-red-600 text-slate-600 font-semibold text-xs flex items-center justify-center gap-1 transition-colors">
+                    <Trash2 className="w-3.5 h-3.5" /> Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {editingService && (
+            <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex justify-center items-center p-4">
+              <div className="w-full max-w-md bg-white rounded-3xl p-6 border border-slate-200/80 shadow-2xl space-y-4 my-8">
+                <h3 className="font-bold text-base text-slate-900">Edit Service: {editingService.label}</h3>
+                <div className="space-y-3">
+                  <input type="text" value={editingService.label} onChange={(e) => setEditingService({ ...editingService, label: e.target.value })} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs outline-none" placeholder="Service Label" />
+                  <textarea rows={2} value={editingService.description} onChange={(e) => setEditingService({ ...editingService, description: e.target.value })} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs outline-none resize-none" placeholder="Description" />
+                  <input type="text" value={editingService.icon} onChange={(e) => setEditingService({ ...editingService, icon: e.target.value })} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs outline-none" placeholder="Icon" />
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <button onClick={async () => {
+                    const res = await fetch(`/api/services/${editingService.id}`, {
+                      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ label: editingService.label, description: editingService.description, icon: editingService.icon })
+                    });
+                    if (res.ok) { setEditingService(null); fetchServices(); }
+                  }} className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition-colors"><Save className="w-3.5 h-3.5 inline" /> Save</button>
+                  <button onClick={() => setEditingService(null)} className="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors">Cancel</button>
                 </div>
               </div>
             </div>
