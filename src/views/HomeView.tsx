@@ -43,7 +43,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSelectView, onOpenBooking,
                 Looking for a dental team that makes your comfort and care a priority? Our friendly professionals provide comprehensive general and cosmetic dentistry in a modern, welcoming environment. Whether it's a routine checkup or a smile makeover, we're here to make your visit easy and stress-free.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row gap-4 pt-6">
                 <button
                   onClick={onOpenBooking}
                   className="px-8 py-4 rounded-full bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 text-white font-bold text-sm shadow-xl shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
