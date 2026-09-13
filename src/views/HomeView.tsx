@@ -51,13 +51,20 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSelectView, onOpenBooking,
                   <Calendar className="w-4 h-4" />
                   Schedule Your Visit Today
                 </button>
-                <button
-                  onClick={onToggleAiDrawer}
-                  className="px-6 py-4 rounded-full bg-white border border-slate-200 text-slate-800 font-semibold text-sm hover:bg-slate-50 transition-colors flex items-center justify-center gap-2 shadow-sm"
-                >
-                  <Bot className="w-4 h-4 text-blue-500" />
-                  Ask AI Assistant
-                </button>
+                <div className="relative">
+                  <button
+                    onClick={onToggleAiDrawer}
+                    className="w-full sm:w-auto px-6 py-4 rounded-full bg-white border border-slate-200 text-slate-800 font-semibold text-sm hover:bg-slate-50 transition-colors flex items-center justify-center gap-2 shadow-sm relative z-10"
+                  >
+                    <Bot className="w-4 h-4 text-blue-500" />
+                    Ask AI Assistant
+                  </button>
+                  {/* AI Notification Popup */}
+                  <div className="absolute -top-14 left-1/2 -translate-x-1/2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-[11px] font-bold px-4 py-2.5 rounded-2xl shadow-xl whitespace-nowrap animate-bounce z-0">
+                    Hi! I am the AI chat bot. How can I help you?
+                    <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-gradient-to-br from-blue-600 to-cyan-500 rotate-45 rounded-sm" />
+                  </div>
+                </div>
               </div>
               <a
                 href={`mailto:${CLINIC_SETTINGS.email}?subject=BOOKING%20FROM%20FIRST%20AVENUE%20DENTIST`}

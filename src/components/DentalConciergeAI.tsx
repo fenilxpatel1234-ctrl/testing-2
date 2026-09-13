@@ -21,6 +21,7 @@ type BookingStage =
   | 'lastName'
   | 'email'
   | 'phone'
+  | 'service'
   | 'date'
   | 'time'
   | 'notes'
@@ -33,6 +34,7 @@ interface BookingData {
   lastName: string;
   email: string;
   phone: string;
+  service: string;
   date: string;
   time: string;
   notes: string;
@@ -54,8 +56,9 @@ export const DentalConciergeAI: React.FC<DentalConciergeAIProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [bookingStage, setBookingStage] = useState<BookingStage>(null);
   const [bookingData, setBookingData] = useState<BookingData>({
-    firstName: '', lastName: '', email: '', phone: '', date: '', time: '', notes: ''
+    firstName: '', lastName: '', email: '', phone: '', service: '', date: '', time: '', notes: ''
   });
+  const [services, setServices] = useState<{id: string, label: string}[]>([]);
   const [editTarget, setEditTarget] = useState<string>('');
   const [countryCode, setCountryCode] = useState('US');
   const [countrySearch, setCountrySearch] = useState('');
@@ -65,7 +68,15 @@ export const DentalConciergeAI: React.FC<DentalConciergeAIProps> = ({
   const chatInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    detectCountryCode().then(code => setCountryCode(code));
+    detectCountryCode().then(code => {
+      setCountryCode(code);
+      const c = COUNTRIES.find(x => x.code === code);
+      if (c) setCountrySearch(c.name);
+    });
+    fetch('/api/services')
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setServices(data); })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -88,10 +99,10 @@ export const DentalConciergeAI: React.FC<DentalConciergeAIProps> = ({
       )
     : COUNTRIES;
 
-  const selectCountry = (code: string) => {
-    setCountryCode(code);
+  const selectCountry = (c: { code: string, name: string }) => {
+    setCountryCode(c.code);
+    setCountrySearch(c.name);
     setCountryListOpen(false);
-    setCountrySearch('');
     chatInputRef.current?.focus();
   };
 
@@ -104,7 +115,7 @@ export const DentalConciergeAI: React.FC<DentalConciergeAIProps> = ({
       setCountryIndex(i => Math.max(i - 1, 0));
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      if (filteredCountries[countryIndex]) selectCountry(filteredCountries[countryIndex].code);
+      if (filteredCountries[countryIndex]) selectCountry(filteredCountries[countryIndex]);
     } else if (e.key === 'Escape') {
       setCountryListOpen(false);
       chatInputRef.current?.focus();
@@ -122,6 +133,7 @@ export const DentalConciergeAI: React.FC<DentalConciergeAIProps> = ({
           lastName: bookingData.lastName,
           email: bookingData.email,
           phone: bookingData.phone,
+          serviceName: bookingData.service,
           preferredDate: bookingData.date,
           preferredTimeSlot: bookingData.time,
           notes: bookingData.notes
@@ -135,6 +147,7 @@ Here's a summary:
 • Name: ${bookingData.firstName} ${bookingData.lastName}
 • Email: ${bookingData.email}
 • Phone: ${bookingData.phone}
+• Service: ${bookingData.service}
 • Date: ${bookingData.date}
 • Time: ${bookingData.time}
 • Notes: ${bookingData.notes || 'None'}
@@ -150,7 +163,7 @@ Is there anything else I can help you with?`);
     } finally {
       setIsLoading(false);
       setBookingStage(null);
-      setBookingData({ firstName: '', lastName: '', email: '', phone: '', date: '', time: '', notes: '' });
+      setBookingData({ firstName: '', lastName: '', email: '', phone: '', service: '', date: '', time: '', notes: '' });
     }
   };
 
@@ -183,9 +196,16 @@ Is there anything else I can help you with?`);
       case 'phone': {
         setBookingData(prev => ({ ...prev, phone: `${selectedCountry.dial} ${value}` }));
         setCountryListOpen(false);
-        setCountrySearch('');
+        setBookingStage('service');
+        const serviceList = services.map(s => s.label).join(', ');
+        addAiMsg(`Thanks! Your number ${selectedCountry.dial} ${value} has been noted. What service are you looking for? ${serviceList ? `(e.g., ${serviceList})` : ''}`);
+        return true;
+      }
+
+      case 'service': {
+        setBookingData(prev => ({ ...prev, service: value }));
         setBookingStage('date');
-        addAiMsg(`Thanks! Your number ${selectedCountry.dial} ${value} has been noted. What date would you like to come in? (today is ${todaySlug()}; pick any date from today onward, e.g. ${formatFriendlyDate(new Date(Date.now() + 2 * 86400000))})`);
+        addAiMsg(`Got it. What date would you like to come in? (today is ${todaySlug()}; pick any date from today onward, e.g. ${formatFriendlyDate(new Date(Date.now() + 2 * 86400000))})`);
         return true;
       }
 
@@ -219,6 +239,7 @@ Is there anything else I can help you with?`);
 • Name: ${bookingData.firstName} ${bookingData.lastName}
 • Email: ${bookingData.email}
 • Phone: ${bookingData.phone}
+• Service: ${bookingData.service}
 • Date: ${bookingData.date}
 • Time: ${bookingData.time}
 ${(value !== 'none' && value !== '') ? `• Notes: ${value}` : ''}
@@ -231,10 +252,10 @@ Does everything look correct? Reply "yes" to submit, "edit" to make changes, or 
           submitBooking();
         } else if (value.toLowerCase() === 'edit' || value.toLowerCase().includes('change')) {
           setBookingStage('editField');
-          addAiMsg("Which field would you like to edit? (Reply with one of: name, email, phone, date, time, notes)");
+          addAiMsg("Which field would you like to edit? (Reply with one of: name, email, phone, service, date, time, notes)");
         } else {
           setBookingStage('firstName');
-          setBookingData({ firstName: '', lastName: '', email: '', phone: '', date: '', time: '', notes: '' });
+          setBookingData({ firstName: '', lastName: '', email: '', phone: '', service: '', date: '', time: '', notes: '' });
           addAiMsg("No problem! Let's start over. What's your first name?");
         }
         return true;
@@ -253,6 +274,10 @@ Does everything look correct? Reply "yes" to submit, "edit" to make changes, or 
           setEditTarget('phone');
           setBookingStage('editValue');
           addAiMsg(`Current phone is ${bookingData.phone}. What should the new phone number be?`);
+        } else if (field.includes('service')) {
+          setEditTarget('service');
+          setBookingStage('editValue');
+          addAiMsg(`Current service is ${bookingData.service}. What service do you need?`);
         } else if (field.includes('date')) {
           setEditTarget('date');
           setBookingStage('editValue');
@@ -266,7 +291,7 @@ Does everything look correct? Reply "yes" to submit, "edit" to make changes, or 
           setBookingStage('editValue');
           addAiMsg(`Current notes are: ${bookingData.notes}. What should the new notes be?`);
         } else {
-          addAiMsg("I didn't catch that. Please reply with one of: name, email, phone, date, time, notes");
+          addAiMsg("I didn't catch that. Please reply with one of: name, email, phone, service, date, time, notes");
         }
         return true;
       }
@@ -285,6 +310,8 @@ Does everything look correct? Reply "yes" to submit, "edit" to make changes, or 
           setBookingData(prev => ({ ...prev, email: value }));
         } else if (editTarget === 'phone') {
           setBookingData(prev => ({ ...prev, phone: value }));
+        } else if (editTarget === 'service') {
+          setBookingData(prev => ({ ...prev, service: value }));
         } else if (editTarget === 'date') {
           const parsed = parseFlexibleDate(value);
           if (!parsed) {
@@ -309,6 +336,7 @@ Does everything look correct? Reply "yes" to submit, "edit" to make changes, or 
 • Name: ${editTarget === 'name' ? value : `${bookingData.firstName} ${bookingData.lastName}`}
 • Email: ${editTarget === 'email' ? value : bookingData.email}
 • Phone: ${editTarget === 'phone' ? value : bookingData.phone}
+• Service: ${editTarget === 'service' ? value : bookingData.service}
 • Date: ${editTarget === 'date' ? toSlug(parseFlexibleDate(value)!) : bookingData.date}
 • Time: ${editTarget === 'time' ? value : bookingData.time}
 • Notes: ${editTarget === 'notes' ? value : bookingData.notes}
