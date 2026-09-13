@@ -393,10 +393,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, pre
           </div>
           
           <div className="relative z-10 flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-400 to-cyan-400 text-white flex items-center justify-center shadow-lg shadow-blue-500/30">
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <span className="text-white font-bold text-lg tracking-tight">First Avenue<br/><span className="text-blue-300 font-medium text-sm">Dentistry</span></span>
+            <img src="/logo.png" alt="First Avenue Dentistry Logo" className="h-12 w-auto object-contain drop-shadow-md" />
           </div>
 
           <div className="relative z-10 space-y-6 mt-auto">
