@@ -381,182 +381,230 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, pre
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 backdrop-blur-sm overflow-hidden">
-      <div className="relative w-full max-w-xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8 bg-slate-900/60 backdrop-blur-md overflow-hidden animate-in fade-in duration-300">
+      <div className="relative w-full max-w-5xl bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[95vh] border border-white/20 animate-in zoom-in-95 duration-500">
         
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 sm:p-8 border-b border-slate-100 bg-white z-10 shrink-0">
-          <div>
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-              {isEmergency ? 'Emergency Booking' : 'Book Appointment'}
-            </h2>
-            <div className="flex items-center gap-2 mt-2">
-              <div className={`h-1.5 w-8 rounded-full ${step >= 1 ? 'bg-blue-600' : 'bg-slate-200'}`} />
-              <div className={`h-1.5 w-8 rounded-full ${step >= 2 ? 'bg-blue-600' : 'bg-slate-200'}`} />
-              <div className={`h-1.5 w-8 rounded-full ${step >= 3 ? 'bg-blue-600' : 'bg-slate-200'}`} />
+        {/* Left Pane - Premium Branding */}
+        <div className="hidden md:flex md:w-5/12 relative bg-slate-900 flex-col p-10 overflow-hidden justify-between">
+          <div className="absolute inset-0">
+            <img src="https://static.wixstatic.com/media/02c124_bfd56d5c986d465ea09e0bc641b8ce19~mv2.jpg" alt="Clinic Office" className="w-full h-full object-cover opacity-50 scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/60 to-slate-900/20" />
+            <div className="absolute inset-0 bg-blue-900/30 mix-blend-multiply" />
+          </div>
+          
+          <div className="relative z-10 flex items-center gap-2">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-400 to-cyan-400 text-white flex items-center justify-center shadow-lg shadow-blue-500/30">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <span className="text-white font-bold text-lg tracking-tight">First Avenue<br/><span className="text-blue-300 font-medium text-sm">Dentistry</span></span>
+          </div>
+
+          <div className="relative z-10 space-y-6 mt-auto">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-xs font-semibold">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              5-Star Rated Clinic
+            </div>
+            <div>
+              <h2 className="text-4xl font-extrabold text-white mb-3 leading-[1.1] tracking-tight">Experience<br/>Dentistry<br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">Redefined.</span></h2>
+              <p className="text-sm text-blue-100/80 leading-relaxed max-w-xs font-medium">Book your consultation today and take the first step towards a healthier, brighter smile.</p>
             </div>
           </div>
-          <button onClick={onClose} className="w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-all">
-            <X className="w-5 h-5" />
-          </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 sm:p-8 custom-scrollbar relative">
-          {submitted ? (
-            <div className="flex flex-col items-center justify-center h-full text-center space-y-5 animate-in fade-in zoom-in duration-500 py-10">
-              <div className="w-20 h-20 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
-                <CheckCircle2 className="w-10 h-10" />
+        {/* Right Pane - Form */}
+        <div className="w-full md:w-7/12 flex flex-col h-full max-h-[95vh] bg-white">
+          <div className="flex items-center justify-between p-6 sm:p-8 border-b border-slate-100 bg-white z-10 shrink-0">
+            <div>
+              <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                {isEmergency ? 'Emergency Booking' : 'Book Appointment'}
+              </h2>
+              <div className="flex items-center gap-2 mt-3">
+                <div className={`h-1.5 w-12 rounded-full transition-colors duration-500 ${step >= 1 ? 'bg-gradient-to-r from-blue-600 to-blue-500 shadow-sm' : 'bg-slate-200'}`} />
+                <div className={`h-1.5 w-12 rounded-full transition-colors duration-500 ${step >= 2 ? 'bg-gradient-to-r from-blue-500 to-cyan-500 shadow-sm' : 'bg-slate-200'}`} />
+                <div className={`h-1.5 w-12 rounded-full transition-colors duration-500 ${step >= 3 ? 'bg-gradient-to-r from-cyan-500 to-cyan-400 shadow-sm' : 'bg-slate-200'}`} />
               </div>
-              <div>
-                <h3 className="text-2xl font-bold text-slate-900 mb-2">Request Confirmed!</h3>
-                <p className="text-sm text-slate-500 max-w-xs mx-auto">We've received your request and will contact you within 2 business hours to confirm your time.</p>
-              </div>
-              <button onClick={() => { setSubmitted(false); onClose(); }} className="px-8 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm transition-colors mt-4">Done</button>
             </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-6 pb-6">
-              {errorMsg && (
-                <div className="p-4 bg-red-50 border border-red-200 text-red-600 text-sm rounded-2xl flex items-start gap-3">
-                  <div className="mt-0.5"><X className="w-4 h-4" /></div>
-                  <div>{errorMsg}</div>
-                </div>
-              )}
+            <button onClick={onClose} className="w-10 h-10 rounded-full bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-all hover:scale-105 active:scale-95">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
 
-              {step === 1 && (
-                <div className="space-y-5 animate-in slide-in-from-right-4 fade-in duration-300">
-                  <h3 className="text-lg font-bold text-slate-800">1. Personal Information</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">First Name *</label>
-                      <input type="text" required value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:bg-white rounded-xl text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 transition-all" placeholder="John" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">Last Name *</label>
-                      <input type="text" required value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:bg-white rounded-xl text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 transition-all" placeholder="Doe" />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">Email Address *</label>
-                    <input type="email" required value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:bg-white rounded-xl text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 transition-all" placeholder="john@example.com" />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">Country & Phone *</label>
-                    <div className="flex flex-col gap-2 relative">
-                      <div className="relative">
-                        <input
-                          type="text"
-                          required
-                          value={countrySearch}
-                          placeholder="Search country name..."
-                          onChange={(e) => { setCountrySearch(e.target.value); setCountryOpen(true); setCountryIndex(0); }}
-                          onFocus={() => setCountryOpen(true)}
-                          onKeyDown={handleCountryKeyDown}
-                          className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:bg-white rounded-xl text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 transition-all pl-10"
-                        />
-                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                           {selectedCountry.code}
-                        </div>
-                        {countryOpen && (
-                          <div className="absolute top-full left-0 mt-2 w-full max-h-60 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-xl z-20">
-                            {filteredCountries.length === 0 && (
-                              <div className="px-3 py-4 text-xs text-slate-400 text-center">No countries found.</div>
-                            )}
-                            {filteredCountries.map((c, i) => (
-                              <button key={c.code} type="button" onClick={() => selectCountry(c)} onMouseEnter={() => setCountryIndex(i)} className={`w-full text-left px-3 py-2.5 text-sm flex items-center gap-3 transition-colors ${i === countryIndex ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-slate-700 hover:bg-slate-50'}`}>
-                                <span className="font-mono text-slate-400 w-10 text-xs">{c.dial}</span>
-                                <span className="truncate flex-1">{c.name}</span>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-mono text-sm">{selectedCountry.dial}</span>
-                        <input ref={phoneInputRef} type="tel" required value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="w-full pl-16 pr-4 py-3 bg-slate-50 border border-slate-200 focus:bg-white rounded-xl text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium tracking-wide" placeholder="Phone number" />
-                      </div>
-                    </div>
+          <div className="flex-1 overflow-y-auto p-6 sm:px-10 sm:py-8 custom-scrollbar relative">
+            {submitted ? (
+              <div className="flex flex-col items-center justify-center h-full text-center space-y-6 animate-in fade-in zoom-in-95 duration-700 py-10">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-emerald-400 blur-2xl opacity-20 rounded-full animate-pulse" />
+                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-100 to-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-200 shadow-xl relative z-10">
+                    <CheckCircle2 className="w-12 h-12" />
                   </div>
                 </div>
-              )}
-
-              {step === 2 && (
-                <div className="space-y-5 animate-in slide-in-from-right-4 fade-in duration-300">
-                  <h3 className="text-lg font-bold text-slate-800">2. Appointment Details</h3>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">Service Required *</label>
-                    <select required value={selectedService} onChange={(e) => setSelectedService(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:bg-white rounded-xl text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer">
-                      <option value="" disabled>Select a service...</option>
-                      {services.map(srv => (
-                        <option key={srv.id} value={srv.label}>{srv.label}</option>
-                      ))}
-                      <option value="General Consultation">General Consultation / Other</option>
-                    </select>
-                  </div>
-                  
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">Preferred Doctor</label>
-                    <select value={doctorPreference} onChange={(e) => setDoctorPreference(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:bg-white rounded-xl text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer">
-                      <option value="Any Available">Any Available Doctor</option>
-                      {doctors.map(doc => (
-                        <option key={doc.id} value={`${doc.name}${doc.credentials ? `, ${doc.credentials}` : ''}`}>
-                          {doc.name}{doc.credentials ? `, ${doc.credentials}` : ''} — {doc.title}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                <div>
+                  <h3 className="text-3xl font-extrabold text-slate-900 mb-3 tracking-tight">Request Confirmed!</h3>
+                  <p className="text-sm text-slate-500 max-w-sm mx-auto leading-relaxed">We've received your request. Our team will contact you within 2 business hours to finalize your appointment time.</p>
                 </div>
-              )}
-
-              {step === 3 && (
-                <div className="space-y-5 animate-in slide-in-from-right-4 fade-in duration-300">
-                  <h3 className="text-lg font-bold text-slate-800">3. Date & Time</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">Preferred Date *</label>
-                      <input type="date" required min={todaySlug()} value={formData.preferredDate} onChange={(e) => setFormData({ ...formData, preferredDate: e.target.value })} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:bg-white rounded-xl text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 transition-all" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">Preferred Time *</label>
-                      <select required value={formData.preferredTimeSlot} onChange={(e) => setFormData({ ...formData, preferredTimeSlot: e.target.value })} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:bg-white rounded-xl text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer">
-                        <option value="09:00 AM">9:00 AM (Morning)</option>
-                        <option value="10:00 AM">10:00 AM</option>
-                        <option value="11:00 AM">11:00 AM</option>
-                        <option value="12:00 PM">12:00 PM (Noon)</option>
-                        <option value="01:00 PM">1:00 PM</option>
-                        <option value="02:00 PM">2:00 PM</option>
-                        <option value="03:00 PM">3:00 PM</option>
-                        <option value="04:00 PM">4:00 PM (Late Afternoon)</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">Additional Notes</label>
-                    <textarea rows={3} value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:bg-white rounded-xl text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 transition-all resize-none" placeholder="Any specific concerns, symptoms, or requests..." />
-                  </div>
-                </div>
-              )}
-
-              <div className="pt-4 flex gap-3">
-                {step > 1 && (
-                  <button type="button" onClick={() => setStep(step - 1)} className="px-6 py-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition-all">
-                    Back
-                  </button>
-                )}
-                <button type="submit" disabled={isSubmitting} className="flex-1 py-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-xl shadow-blue-600/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2 group">
-                  {isSubmitting ? (
-                    <><span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span> Processing...</>
-                  ) : step < 3 ? (
-                    <>Next Step <span className="group-hover:translate-x-1 transition-transform">→</span></>
-                  ) : (
-                    <>Confirm Booking <CheckCircle2 className="w-4 h-4 ml-1" /></>
-                  )}
+                <button onClick={() => { setSubmitted(false); onClose(); }} className="px-10 py-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm shadow-xl shadow-slate-900/20 transition-all hover:-translate-y-0.5 active:scale-95 mt-6">
+                  Done
                 </button>
               </div>
-            </form>
-          )}
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-6 pb-6 h-full flex flex-col">
+                {errorMsg && (
+                  <div className="p-4 bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl flex items-start gap-3 animate-in slide-in-from-top-2">
+                    <div className="mt-0.5"><X className="w-4 h-4" /></div>
+                    <div className="font-medium">{errorMsg}</div>
+                  </div>
+                )}
+
+                <div className="flex-1">
+                  {step === 1 && (
+                    <div className="space-y-6 animate-in slide-in-from-right-8 fade-in duration-500 fill-mode-forwards">
+                      <div className="space-y-1">
+                        <h3 className="text-xl font-bold text-slate-800">Personal Information</h3>
+                        <p className="text-xs text-slate-500">Let's start with the basics so we know who you are.</p>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <div className="space-y-2 group">
+                          <label className="text-[11px] font-bold text-slate-600 tracking-wider uppercase transition-colors group-focus-within:text-blue-600">First Name *</label>
+                          <input type="text" required value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 focus:bg-white rounded-xl text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all shadow-sm" placeholder="John" />
+                        </div>
+                        <div className="space-y-2 group">
+                          <label className="text-[11px] font-bold text-slate-600 tracking-wider uppercase transition-colors group-focus-within:text-blue-600">Last Name *</label>
+                          <input type="text" required value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 focus:bg-white rounded-xl text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all shadow-sm" placeholder="Doe" />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 group">
+                        <label className="text-[11px] font-bold text-slate-600 tracking-wider uppercase transition-colors group-focus-within:text-blue-600">Email Address *</label>
+                        <input type="email" required value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 focus:bg-white rounded-xl text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all shadow-sm" placeholder="john.doe@example.com" />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-[11px] font-bold text-slate-600 tracking-wider uppercase">Country & Phone *</label>
+                        <div className="flex flex-col gap-3 relative">
+                          <div className="relative group">
+                            <input
+                              type="text"
+                              required
+                              value={countrySearch}
+                              placeholder="Search country name (e.g. Canada)..."
+                              onChange={(e) => { setCountrySearch(e.target.value); setCountryOpen(true); setCountryIndex(0); }}
+                              onFocus={() => setCountryOpen(true)}
+                              onKeyDown={handleCountryKeyDown}
+                              className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 focus:bg-white rounded-xl text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all pl-12 shadow-sm"
+                            />
+                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs bg-slate-200 px-1.5 py-0.5 rounded">
+                               {selectedCountry.code}
+                            </div>
+                            {countryOpen && (
+                              <div className="absolute top-full left-0 mt-2 w-full max-h-60 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-2xl z-20">
+                                {filteredCountries.length === 0 && (
+                                  <div className="px-3 py-4 text-xs text-slate-400 text-center">No countries found.</div>
+                                )}
+                                {filteredCountries.map((c, i) => (
+                                  <button key={c.code} type="button" onClick={() => selectCountry(c)} onMouseEnter={() => setCountryIndex(i)} className={`w-full text-left px-4 py-3 text-sm flex items-center gap-3 transition-colors ${i === countryIndex ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-slate-700 hover:bg-slate-50'}`}>
+                                    <span className="font-mono text-slate-400 w-10 text-xs">{c.dial}</span>
+                                    <span className="truncate flex-1">{c.name}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          <div className="relative group">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-mono text-sm border-r border-slate-200 pr-3">{selectedCountry.dial}</span>
+                            <input ref={phoneInputRef} type="tel" required value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="w-full pl-20 pr-4 py-3.5 bg-slate-50 border border-slate-200 focus:bg-white rounded-xl text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all font-medium tracking-wide shadow-sm" placeholder="Phone number" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {step === 2 && (
+                    <div className="space-y-6 animate-in slide-in-from-right-8 fade-in duration-500 fill-mode-forwards">
+                      <div className="space-y-1">
+                        <h3 className="text-xl font-bold text-slate-800">Appointment Details</h3>
+                        <p className="text-xs text-slate-500">Tell us what you're coming in for.</p>
+                      </div>
+                      
+                      <div className="space-y-2 group">
+                        <label className="text-[11px] font-bold text-slate-600 tracking-wider uppercase transition-colors group-focus-within:text-blue-600">Service Required *</label>
+                        <select required value={selectedService} onChange={(e) => setSelectedService(e.target.value)} className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 focus:bg-white rounded-xl text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all appearance-none cursor-pointer shadow-sm">
+                          <option value="" disabled>Select a service...</option>
+                          {services.map(srv => (
+                            <option key={srv.id} value={srv.label}>{srv.label}</option>
+                          ))}
+                          <option value="General Consultation">General Consultation / Other</option>
+                        </select>
+                      </div>
+                      
+                      <div className="space-y-2 group">
+                        <label className="text-[11px] font-bold text-slate-600 tracking-wider uppercase transition-colors group-focus-within:text-blue-600">Preferred Doctor</label>
+                        <select value={doctorPreference} onChange={(e) => setDoctorPreference(e.target.value)} className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 focus:bg-white rounded-xl text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all appearance-none cursor-pointer shadow-sm">
+                          <option value="Any Available">Any Available Doctor</option>
+                          {doctors.map(doc => (
+                            <option key={doc.id} value={`${doc.name}${doc.credentials ? `, ${doc.credentials}` : ''}`}>
+                              {doc.name}{doc.credentials ? `, ${doc.credentials}` : ''} — {doc.title}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  )}
+
+                  {step === 3 && (
+                    <div className="space-y-6 animate-in slide-in-from-right-8 fade-in duration-500 fill-mode-forwards">
+                      <div className="space-y-1">
+                        <h3 className="text-xl font-bold text-slate-800">Date & Time</h3>
+                        <p className="text-xs text-slate-500">When works best for you?</p>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <div className="space-y-2 group">
+                          <label className="text-[11px] font-bold text-slate-600 tracking-wider uppercase transition-colors group-focus-within:text-blue-600">Preferred Date *</label>
+                          <input type="date" required min={todaySlug()} value={formData.preferredDate} onChange={(e) => setFormData({ ...formData, preferredDate: e.target.value })} className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 focus:bg-white rounded-xl text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all shadow-sm" />
+                        </div>
+                        <div className="space-y-2 group">
+                          <label className="text-[11px] font-bold text-slate-600 tracking-wider uppercase transition-colors group-focus-within:text-blue-600">Preferred Time *</label>
+                          <select required value={formData.preferredTimeSlot} onChange={(e) => setFormData({ ...formData, preferredTimeSlot: e.target.value })} className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 focus:bg-white rounded-xl text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all appearance-none cursor-pointer shadow-sm">
+                            <option value="09:00 AM">9:00 AM (Morning)</option>
+                            <option value="10:00 AM">10:00 AM</option>
+                            <option value="11:00 AM">11:00 AM</option>
+                            <option value="12:00 PM">12:00 PM (Noon)</option>
+                            <option value="01:00 PM">1:00 PM</option>
+                            <option value="02:00 PM">2:00 PM</option>
+                            <option value="03:00 PM">3:00 PM</option>
+                            <option value="04:00 PM">4:00 PM (Late Afternoon)</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 group">
+                        <label className="text-[11px] font-bold text-slate-600 tracking-wider uppercase transition-colors group-focus-within:text-blue-600">Additional Notes</label>
+                        <textarea rows={3} value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 focus:bg-white rounded-xl text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all resize-none shadow-sm" placeholder="Any specific concerns, symptoms, or requests..." />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-6 mt-auto border-t border-slate-100 flex gap-3">
+                  {step > 1 && (
+                    <button type="button" onClick={() => setStep(step - 1)} className="px-6 py-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition-all hover:scale-105 active:scale-95 shadow-sm">
+                      Back
+                    </button>
+                  )}
+                  <button type="submit" disabled={isSubmitting} className="flex-1 py-4 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white font-bold text-sm shadow-xl shadow-blue-500/25 transition-all disabled:opacity-50 flex items-center justify-center gap-2 group hover:scale-[1.02] active:scale-95">
+                    {isSubmitting ? (
+                      <><span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span> Processing...</>
+                    ) : step < 3 ? (
+                      <>Next Step <span className="group-hover:translate-x-1 transition-transform">→</span></>
+                    ) : (
+                      <>Confirm Booking <CheckCircle2 className="w-4 h-4 ml-1" /></>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
         </div>
       </div>
     </div>
