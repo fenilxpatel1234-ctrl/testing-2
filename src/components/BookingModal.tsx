@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, CheckCircle2 } from 'lucide-react';
+import { X, CheckCircle2, Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Doctor, ServiceListEntry } from '../types';
 import { isDateInPast, todaySlug } from '../lib/dateUtil';
