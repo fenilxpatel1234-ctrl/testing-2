@@ -4,6 +4,7 @@ import fs from 'fs';
 import crypto from 'crypto';
 import dotenv from 'dotenv';
 import nodemailer from 'nodemailer';
+import rateLimit from 'express-rate-limit';
 import { createServer as createViteServer } from 'vite';
 import { AppointmentRequest, PatientMessage, AdminUser, ResetToken, Doctor, SiteReview } from './src/types';
 import { initFirebase, isFirebaseReady, fbGet, fbSet } from './src/lib/firebase';
@@ -15,6 +16,16 @@ const app = express();
 const PORT = 3000;
 
 app.use(express.json({ limit: '100kb' }));
+
+// --- Security: Rate Limiting ---
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 150, // limit each IP to 150 requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api/', apiLimiter);
+
 
 // --- Security headers ---
 app.use((req, res, next) => {
@@ -277,36 +288,36 @@ function emailShell(innerHtml: string): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${CLINIC_NAME}</title>
 </head>
-<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:Arial,Helvetica,sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f1f5f9;padding:24px 12px;">
+<body style="margin:0;padding:0;background-color:#faf9f6;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#faf9f6;padding:32px 12px;">
     <tr>
       <td align="center">
-        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 8px 30px rgba(15,23,42,0.08);">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:#ffffff;border:1px solid #e5e5e5;border-radius:8px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.05);">
           <tr>
-            <td style="background:linear-gradient(135deg,#2563eb 0%,#06b6d4 100%);padding:32px 40px;text-align:center;">
-              <div style="font-size:24px;font-weight:800;color:#ffffff;letter-spacing:1px;">FIRST AVENUE<br>DENTISTRY</div>
-              <div style="font-size:12px;color:#e0f2fe;margin-top:6px;letter-spacing:2px;">ST. THOMAS &bull; ONTARIO</div>
+            <td style="background-color:#1e293b;border-bottom:4px solid #d4af37;padding:36px 40px;text-align:center;">
+              <div style="font-size:26px;font-weight:700;color:#ffffff;letter-spacing:2px;font-family:Georgia,serif;">FIRST AVENUE<br>DENTISTRY</div>
+              <div style="font-size:11px;color:#cbd5e1;margin-top:8px;letter-spacing:3px;text-transform:uppercase;">St. Thomas &bull; Ontario</div>
             </td>
           </tr>
           <tr>
-            <td style="padding:36px 40px;color:#1e293b;">
+            <td style="padding:40px 40px;color:#334155;">
               ${innerHtml}
             </td>
           </tr>
           <tr>
-            <td style="background:#f8fafc;padding:24px 40px;border-top:1px solid #e2e8f0;text-align:center;">
+            <td style="background:#f8fafc;padding:32px 40px;border-top:1px solid #e2e8f0;text-align:center;">
               <div style="font-size:12px;color:#475569;line-height:1.8;">
                 <strong>${CLINIC_NAME}</strong><br>
                 ${CLINIC_ADDRESS}<br>
-                <a href="tel:+15192076890" style="color:#2563eb;text-decoration:none;font-weight:bold;">${CLINIC_PHONE}</a> &nbsp;|&nbsp;
-                <a href="mailto:firstavenuedentistry@gmail.com" style="color:#2563eb;text-decoration:none;">firstavenuedentistry@gmail.com</a><br>
+                <a href="tel:+15192076890" style="color:#d4af37;text-decoration:none;font-weight:bold;">${CLINIC_PHONE}</a> &nbsp;|&nbsp;
+                <a href="mailto:firstavenuedentistry@gmail.com" style="color:#475569;text-decoration:none;">firstavenuedentistry@gmail.com</a><br>
                 Mon &ndash; Fri: 9am &ndash; 6pm &nbsp;|&nbsp; Sat: 9am &ndash; 5pm
               </div>
-              <div style="font-size:11px;color:#94a3b8;line-height:1.6;margin-top:14px;padding-top:14px;border-top:1px solid #e2e8f0;">
+              <div style="font-size:11px;color:#94a3b8;line-height:1.6;margin-top:20px;padding-top:20px;border-top:1px solid #e2e8f0;">
                 This is an automated email from ${CLINIC_NAME}. Please do not reply to this message &mdash; replies are not monitored.<br>
-                For assistance, please call <a href="tel:+15192076890" style="color:#2563eb;text-decoration:none;">${CLINIC_PHONE}</a>.
+                For assistance, please call <a href="tel:+15192076890" style="color:#475569;text-decoration:underline;">${CLINIC_PHONE}</a>.
               </div>
-              <div style="font-size:10px;color:#94a3b8;margin-top:12px;">&copy; ${new Date().getFullYear()} ${CLINIC_NAME}. All rights reserved.</div>
+              <div style="font-size:10px;color:#cbd5e1;margin-top:16px;">&copy; ${new Date().getFullYear()} ${CLINIC_NAME}. All rights reserved.</div>
             </td>
           </tr>
         </table>
@@ -1303,9 +1314,9 @@ app.post('/api/ai/dental-assistant', async (req: Request, res: Response) => {
       }
     }
 
-    // 5) Friendly default
+    // 5) Friendly default - Advanced Fallback
     return res.json({
-      answer: "I'm here to help with anything about your smile! 😊\n\nAsk me about our treatments — cleaning, whitening, veneers, implants, Invisalign, root canals, kids' dentistry, sedation and more — plus office hours, insurance, pricing or booking. Or feel free to call our team at " + CLINIC_SETTINGS.phone + " and we'll take great care of you."
+      answer: "I'm here to help with any dental concern or question you have! 😊\n\nWhether you're experiencing pain, wondering about cosmetic improvements, or just need a routine checkup, our expert team at First Avenue Dentistry has you covered.\n\nPlease provide a few more details about your specific situation so I can give you the best possible advice, or feel free to call our clinic directly at " + CLINIC_SETTINGS.phone + " for immediate assistance."
     });
   } catch (err: any) {
     return res.json({

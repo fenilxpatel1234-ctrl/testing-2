@@ -232,14 +232,19 @@ export function getCountryByTimezone(): string {
 export async function detectCountryCode(): Promise<string> {
   try {
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 4000);
+    const timer = setTimeout(() => ctrl.abort(), 6000); // Increased timeout to 6s
     const res = await fetch('/api/geo', { signal: ctrl.signal });
     clearTimeout(timer);
-    const data = await res.json();
-    if (data && data.countryCode && COUNTRIES.some(c => c.code === data.countryCode)) {
-      return data.countryCode;
+    
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.countryCode && COUNTRIES.some(c => c.code === data.countryCode)) {
+        return data.countryCode;
+      }
     }
-  } catch {}
+  } catch (err) {
+    console.warn('Geo IP fetch failed, falling back to timezone.', err);
+  }
   return getCountryByTimezone();
 }
 
@@ -357,15 +362,16 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, pre
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30">
-      <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
-        <button onClick={onClose} className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors z-10">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md">
+      <div className="relative w-full max-w-lg bg-white/95 backdrop-blur-xl rounded-3xl shadow-[0_0_60px_-15px_rgba(0,0,0,0.3)] border border-white/50 overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600"></div>
+        <button onClick={onClose} className="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-100/80 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-all z-10">
           <X className="w-4 h-4" />
         </button>
 
-        <div className="p-6">
-          <h2 className="text-xl font-bold text-slate-900 mb-1">Book an Appointment</h2>
-          <p className="text-xs text-slate-500 mb-6">Fill in your details and we'll confirm your visit.</p>
+        <div className="p-8">
+          <h2 className="text-2xl font-black text-slate-900 mb-1.5">Book an Appointment</h2>
+          <p className="text-xs text-slate-500 mb-6 font-medium">Fill in your details and we'll confirm your visit shortly.</p>
 
           {submitted ? (
             <div className="text-center py-8 space-y-4">
@@ -469,8 +475,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, pre
                 <textarea rows={3} value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 resize-none" placeholder="Any specific concerns or requests..." />
               </div>
 
-              <button type="submit" disabled={isSubmitting} className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-md transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
-                {isSubmitting ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> Submitting...</> : <>Submit Booking</>}
+              <button type="submit" disabled={isSubmitting} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white font-bold text-sm shadow-lg shadow-blue-500/30 transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-2">
+                {isSubmitting ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> Submitting...</> : <>Submit Booking Request</>}
               </button>
             </form>
           )}

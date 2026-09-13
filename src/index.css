@@ -11,5 +11,5 @@ input[type="radio"],
 input[type="submit"],
 input[type="button"],
 summary {
-  cursor: pointer;
+  cursor: auto;
 }

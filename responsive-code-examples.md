@@ -105,4 +105,10 @@ Rule of thumb: design **mobile-first**. Base classes are the phone layout;
 - `hidden lg:flex` / `lg:hidden` = swap UI between phone and laptop.
 - Use `sm:`/`lg:` for text scale: `text-3xl sm:text-5xl`.
 - Tailwind v4 note: buttons no longer get a `pointer` cursor by default —
-  add this once to your CSS: `button:not(:disabled) { cursor: pointer; }`
+  add this once to your CSS: `button:not(:disabled) { cursor: pointer; }`'
+
+
+
+
+
+  

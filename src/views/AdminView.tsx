@@ -185,8 +185,11 @@ export const AdminView: React.FC<AdminViewProps> = ({ onSelectView }) => {
     }
   }, [loggedInUser]);
 
+  // Idle timeout & Visitor tracking
   useEffect(() => {
     if (!isLoggedIn) return;
+
+    // Visitor tracking
     const fetchVisitors = async () => {
       try {
         const res = await fetch('/api/analytics/visitors');
@@ -195,8 +198,34 @@ export const AdminView: React.FC<AdminViewProps> = ({ onSelectView }) => {
       } catch {}
     };
     fetchVisitors();
-    const interval = setInterval(fetchVisitors, 60000);
-    return () => clearInterval(interval);
+    const visitorInterval = setInterval(fetchVisitors, 60000);
+
+    // Idle Auto-Lock (15 minutes)
+    let idleSeconds = 0;
+    const MAX_IDLE_SECONDS = 15 * 60; 
+    
+    const resetIdle = () => { idleSeconds = 0; };
+    window.addEventListener('mousemove', resetIdle);
+    window.addEventListener('keydown', resetIdle);
+    window.addEventListener('click', resetIdle);
+    window.addEventListener('scroll', resetIdle);
+
+    const idleInterval = setInterval(() => {
+      idleSeconds++;
+      if (idleSeconds >= MAX_IDLE_SECONDS) {
+        handleSignOut();
+        setLoginError('Your session was locked due to inactivity. Please sign in again.');
+      }
+    }, 1000);
+
+    return () => {
+      clearInterval(visitorInterval);
+      clearInterval(idleInterval);
+      window.removeEventListener('mousemove', resetIdle);
+      window.removeEventListener('keydown', resetIdle);
+      window.removeEventListener('click', resetIdle);
+      window.removeEventListener('scroll', resetIdle);
+    };
   }, [isLoggedIn]);
 
   const handleLogin = async (e: React.FormEvent) => {
